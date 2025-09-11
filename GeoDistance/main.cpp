@@ -11,11 +11,8 @@ int main() {
 	run_all_tests();
 #endif // _DEBUG
 
-	GeoPos point_a{ 39.76424445f, -104.8547524f };
-	GeoPos point_b{ 56.02672945f, 92.86573395f };
-
-	//GeoPos point_a{ -23.555771f, -46.639557f };
-	//GeoPos point_b{ 28.613830f, 77.208491f };
+	GeoPos point_a{ 59.934228f, 30.324594f };
+	GeoPos point_b{ 40.689167f, -74.044583f };
 
 	Vec3f point_a_vec = geo_to_vec(point_a);
 	Vec3f point_b_vec = geo_to_vec(point_b);
