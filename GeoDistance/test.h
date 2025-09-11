@@ -22,7 +22,7 @@ void test_11();
 void test_12();
 void test_13();
 void test_14();
-void run_all_tests();
+void run_test();
 
 void test_0() {
 	std::cout << "test_0: ";
@@ -322,7 +322,7 @@ void test_14() {
 	std::cout << "PASSED\n";
 }
 
-void run_all_tests() {
+void run_test() {
 	test_0();
 	test_1();
 	test_2();
