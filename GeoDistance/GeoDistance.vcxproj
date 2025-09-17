@@ -136,6 +136,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="geopos.h" />
+    <ClInclude Include="graphics.h" />
     <ClInclude Include="test.h" />
     <ClInclude Include="Vec3f.h" />
     <ClInclude Include="Vec4f.h" />
