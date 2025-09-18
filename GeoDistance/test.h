@@ -29,8 +29,8 @@ void test_0() {
 	GeoPos point_a{ 0.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 0.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 0.0f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -48,8 +48,8 @@ void test_1() {
 	GeoPos point_a{ 0.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 90.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -68,8 +68,8 @@ void test_2() {
 	GeoPos point_a{ 0.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 180.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 12742.0f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -88,8 +88,8 @@ void test_3() {
 	GeoPos point_a{ 0.0f, 0.0f };
 	GeoPos point_b{ 0.0f, -180.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 12742.0f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -108,8 +108,8 @@ void test_4() {
 	GeoPos point_a{ 0.0f, 0.0f };
 	GeoPos point_b{ 0.0f, -90.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -128,8 +128,8 @@ void test_5() {
 	GeoPos point_a{ 90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 0.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -148,8 +148,8 @@ void test_6() {
 	GeoPos point_a{ 90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 90.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -168,8 +168,8 @@ void test_7() {
 	GeoPos point_a{ 90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 180.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -188,8 +188,8 @@ void test_8() {
 	GeoPos point_a{ 90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, -90.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -208,8 +208,8 @@ void test_9() {
 	GeoPos point_a{ -90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 0.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -228,8 +228,8 @@ void test_10() {
 	GeoPos point_a{ -90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 90.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -248,8 +248,8 @@ void test_11() {
 	GeoPos point_a{ -90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, 180.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -268,8 +268,8 @@ void test_12() {
 	GeoPos point_a{ -90.0f, 0.0f };
 	GeoPos point_b{ 0.0f, -90.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 9009.9546058789885559f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -288,8 +288,8 @@ void test_13() {
 	GeoPos point_a{ -90.0f, 0.0f };
 	GeoPos point_b{ 90.0f, 0.0f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 12742.0f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);
@@ -308,8 +308,8 @@ void test_14() {
 	GeoPos point_a{ 29.91900646734f, -48.38823296416f };
 	GeoPos point_b{ -19.95980752988f, 142.69801292915f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	float expected_chord_distance = 12645.202480556571329685f;
 	float actual_chord_distance = calc_chord_distance_km(point_a_vec, point_b_vec);

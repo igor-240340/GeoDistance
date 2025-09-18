@@ -15,7 +15,7 @@ struct GeoPos {
 	float lon_deg;
 };
 
-Vec3f geo_to_vec(const GeoPos& point_geo) {
+Vec3f geo_to_vec_unit(const GeoPos& point_geo) {
 	float lat_rad = point_geo.lat_deg * deg_to_rad;
 	float lon_rad = point_geo.lon_deg * deg_to_rad;
 
@@ -26,7 +26,11 @@ Vec3f geo_to_vec(const GeoPos& point_geo) {
 		std::cos(lon_rad) * equator_proj
 	};
 
-	return unit_vec * mean_earth_r_km;
+	return unit_vec;
+}
+
+Vec3f geo_to_vec_earth(const GeoPos& point_geo) {
+	return geo_to_vec_unit(point_geo) * mean_earth_r_km;
 }
 
 // По сути - это длина дуги на окружности, образованной этими векторами.

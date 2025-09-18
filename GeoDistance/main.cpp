@@ -49,11 +49,14 @@ void init_transforms(TransformMatrices& transforms);
 void load_model(std::string model_path, std::vector<Polygon>& polygons);
 void draw_globe(std::vector<Polygon> globe_mesh, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
 void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform);
+void draw_path_stuff();
 
 int main() {
+	/*
 #ifdef _DEBUG
 	run_test();
 #endif // _DEBUG
+*/
 
 	constexpr int w = 800;
 	constexpr int h = 600;
@@ -86,8 +89,8 @@ int main() {
 	GeoPos point_a{ 59.934228f, 30.324594f };
 	GeoPos point_b{ 40.689167f, -74.044583f };
 
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
+	Vec3f point_a_vec = geo_to_vec_earth(point_a);
+	Vec3f point_b_vec = geo_to_vec_earth(point_b);
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -102,6 +105,7 @@ int main() {
 		clear_z_buffer(1.0f, z_buffer);
 
 		draw_globe(globe_mesh, light, framebuffer, z_buffer, transforms);
+		draw_path_stuff();
 
 		tgui::Label::Ptr azimuth_label = gui.get<tgui::Label>("azimuth_label");
 		if (azimuth_label)
@@ -286,5 +290,31 @@ void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, 
 			polygon_normal
 		};
 		draw_polygon_flat_shaded(polygon_screen, light, framebuffer, z_buffer);
+	}
+}
+
+void draw_path_stuff() {
+	GeoPos point_a{ 23.60596207296f, -14.85970911760f };
+	GeoPos point_b{ -59.80998273442f, -90.0f };
+
+	Vec3f point_a_vec = geo_to_vec_unit(point_a);
+	Vec3f point_b_vec = geo_to_vec_unit(point_b);
+
+	float angle_cos = std::clamp(Vec3f::dot(point_a_vec, point_b_vec), -1.0f, 1.0f);
+	float angle = std::acos(angle_cos);
+
+	int n = 4;
+	float angle_step = angle / n;
+	float cur_angle = 0.0f;
+	std::vector<Vec3f> path_points_local; // Стартовая точка - в нуле.
+	path_points_local.push_back(Vec3f::zero);
+	for (int i = 0; i <= n; ++i) {
+		Vec3f point{
+			std::cos(cur_angle) * (mean_earth_r_km + 0.01f),
+			std::sin(cur_angle) * (mean_earth_r_km + 0.01f),
+			0.0f
+		};
+		path_points_local.push_back(point);
+		cur_angle += angle_step;
 	}
 }
