@@ -177,3 +177,21 @@ Mat4f Mat4f::create_rotation_z(const float angle_rad) {
 
 	return mat_rot;
 }
+
+Mat4f Mat4f::create_basis(const Vec3f& i, const Vec3f& j, const Vec3f& k) {
+	Mat4f mat{};
+
+	mat.data[0] = i.x;
+	mat.data[1] = i.y;
+	mat.data[2] = i.z;
+
+	mat.data[4] = j.x;
+	mat.data[5] = j.y;
+	mat.data[6] = j.z;
+
+	mat.data[8] = k.x;
+	mat.data[9] = k.y;
+	mat.data[10] = k.z;
+
+	return mat;
+}

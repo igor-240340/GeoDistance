@@ -49,7 +49,7 @@ void init_transforms(TransformMatrices& transforms);
 void load_model(std::string model_path, std::vector<Polygon>& polygons);
 void draw_globe(std::vector<Polygon> globe_mesh, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
 void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform);
-void draw_path_stuff();
+void draw_path_stuff(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
 
 int main() {
 	/*
@@ -105,7 +105,7 @@ int main() {
 		clear_z_buffer(1.0f, z_buffer);
 
 		draw_globe(globe_mesh, light, framebuffer, z_buffer, transforms);
-		draw_path_stuff();
+		draw_path_stuff(framebuffer, z_buffer, transforms);
 
 		tgui::Label::Ptr azimuth_label = gui.get<tgui::Label>("azimuth_label");
 		if (azimuth_label)
@@ -276,8 +276,6 @@ void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, 
 			Vec4f pos{ vertex.pos };
 
 			Vec4f pos_clip = proj * pos;
-			if (pos_clip.w == 0.0f)
-				std::cout << "";
 			Vec4f pos_ndc = pos_clip / pos_clip.w;
 			Vec4f pos_screen = viewport * pos_ndc;
 
@@ -293,9 +291,18 @@ void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, 
 	}
 }
 
-void draw_path_stuff() {
-	GeoPos point_a{ 23.60596207296f, -14.85970911760f };
-	GeoPos point_b{ -59.80998273442f, -90.0f };
+void draw_path_stuff(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms) {
+	// В нашем случае размеры окна никогда не меняются в рантайме.
+	static const float fov_vert_rad = static_cast<float>(45.0f * deg_to_rad);
+	static const float aspect_ratio = static_cast<float>(framebuffer.w) / framebuffer.h;
+	static const Mat4f proj = Mat4f::create_perspective(fov_vert_rad, aspect_ratio, 0.1f, 10.0f);
+	static const Mat4f viewport = Mat4f::create_viewport(framebuffer.w, framebuffer.h);
+
+	/*GeoPos point_a{ 23.60596207296f, -14.85970911760f };
+	GeoPos point_b{ -59.80998273442f, -90.0f };*/
+
+	GeoPos point_a{ -23.555771f, -46.639557f };
+	GeoPos point_b{ 28.613830f, 77.208491f };
 
 	Vec3f point_a_vec = geo_to_vec_unit(point_a);
 	Vec3f point_b_vec = geo_to_vec_unit(point_b);
@@ -303,18 +310,41 @@ void draw_path_stuff() {
 	float angle_cos = std::clamp(Vec3f::dot(point_a_vec, point_b_vec), -1.0f, 1.0f);
 	float angle = std::acos(angle_cos);
 
-	int n = 4;
+	// "Базис окружности".
+	float dot = Vec3f::dot(point_a_vec, point_b_vec);
+	Vec3f b_proj = (point_a_vec * dot);
+	Vec3f i{ point_a_vec.x, point_a_vec.y, point_a_vec.z };
+	Vec3f j = (point_b_vec - b_proj).get_normalized();
+	Vec3f k = Vec3f::zero;
+	Mat4f basis = Mat4f::create_basis(i, j, k);
+
+	int n = 8;
 	float angle_step = angle / n;
 	float cur_angle = 0.0f;
-	std::vector<Vec3f> path_points_local; // Стартовая точка - в нуле.
-	path_points_local.push_back(Vec3f::zero);
+	std::vector<Vec3f> path_points_screen; // Стартовая точка - в нуле.
+
+	Vec4f point_world_ = transforms.camera * Vec3f::zero;
+	Vec4f point_clip_ = proj * point_world_;
+	Vec4f point_ndc_ = point_clip_ / point_clip_.w;
+	Vec4f point_screen_ = viewport * point_ndc_;
+	path_points_screen.push_back(point_screen_);
 	for (int i = 0; i <= n; ++i) {
-		Vec3f point{
-			std::cos(cur_angle) * (mean_earth_r_km + 0.01f),
-			std::sin(cur_angle) * (mean_earth_r_km + 0.01f),
+		Vec4f point_local{
+			std::cos(cur_angle) * 1.03f,
+			std::sin(cur_angle) * 1.03f,
 			0.0f
 		};
-		path_points_local.push_back(point);
+		Vec4f point_world = transforms.camera * basis * point_local;
+		Vec4f point_clip = proj * point_world;
+		Vec4f point_ndc = point_clip / point_clip.w;
+		Vec4f point_screen = viewport * point_ndc;
+		path_points_screen.push_back(Vec3f{ point_screen.x, point_screen.y, point_screen.z });
 		cur_angle += angle_step;
+	}
+
+	for (int i = 0; i < path_points_screen.size(); ++i) {
+		Vec3f a = path_points_screen[i];
+		Vec3f b = path_points_screen[(i + 1) % path_points_screen.size()]; // Замыкаем путь на нулевую точку.
+		draw_line_dda_z(a.x, a.y, a.z, b.x, b.y, b.z, sf::Color::Magenta, framebuffer, z_buffer);
 	}
 }
