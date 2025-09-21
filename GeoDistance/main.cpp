@@ -44,19 +44,27 @@ struct TransformMatrices {
 	bool changed = true;
 };
 
-void build_ui(tgui::Gui& gui, TransformMatrices& transforms);
+struct GeoPoints {
+	GeoPos a;
+	GeoPos b;
+};
+
+struct PathLen {
+	float arc_path_km;
+	float straight_path_km;
+};
+
+void build_ui(tgui::Gui& gui, TransformMatrices& transforms, GeoPoints& geo_points);
 void init_transforms(TransformMatrices& transforms);
 void load_model(std::string model_path, std::vector<Polygon>& polygons);
 void draw_globe(std::vector<Polygon> globe_mesh, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
 void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform);
-void draw_path_stuff(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
+void calc_and_draw_path(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms, const GeoPoints& geo_points, PathLen& path_len);
 
 int main() {
-	/*
 #ifdef _DEBUG
 	run_test();
 #endif // _DEBUG
-*/
 
 	constexpr int w = 800;
 	constexpr int h = 600;
@@ -67,9 +75,13 @@ int main() {
 
 	tgui::Gui gui{ window };
 
+	GeoPoints geo_points{
+		{ -23.555771f, -46.639557f },
+		{ 28.613830f, 77.208491f }
+	};
 	TransformMatrices transforms;
 	init_transforms(transforms);
-	build_ui(gui, transforms);
+	build_ui(gui, transforms, geo_points);
 
 	sf::Texture texture;
 	if (!texture.create(w, h)) {
@@ -86,12 +98,7 @@ int main() {
 	std::vector<Polygon> globe_mesh;
 	load_model(std::format("assets/globe/globe.obj"), globe_mesh);
 
-	GeoPos point_a{ 59.934228f, 30.324594f };
-	GeoPos point_b{ 40.689167f, -74.044583f };
-
-	Vec3f point_a_vec = geo_to_vec_earth(point_a);
-	Vec3f point_b_vec = geo_to_vec_earth(point_b);
-
+	PathLen path_len{};
 	while (window.isOpen()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
@@ -105,15 +112,15 @@ int main() {
 		clear_z_buffer(1.0f, z_buffer);
 
 		draw_globe(globe_mesh, light, framebuffer, z_buffer, transforms);
-		draw_path_stuff(framebuffer, z_buffer, transforms);
+		calc_and_draw_path(framebuffer, z_buffer, transforms, geo_points, path_len);
 
-		tgui::Label::Ptr azimuth_label = gui.get<tgui::Label>("azimuth_label");
-		if (azimuth_label)
-			azimuth_label->setText(std::format("Azimuth:\n{}", 0.0f));
+		tgui::Label::Ptr arc_path_label = gui.get<tgui::Label>("arc_path_label");
+		if (arc_path_label)
+			arc_path_label->setText(std::format("Arc path (km):\n{}", path_len.arc_path_km));
 
-		tgui::Label::Ptr elevation_label = gui.get<tgui::Label>("elevation_label");
-		if (elevation_label)
-			elevation_label->setText(std::format("Elevation:\n{}", 0.0f));
+		tgui::Label::Ptr straight_path_label = gui.get<tgui::Label>("straight_path_label");
+		if (straight_path_label)
+			straight_path_label->setText(std::format("Straight path (km):\n{}", path_len.straight_path_km));
 
 		texture.update(framebuffer.rgba_array.data());
 
@@ -132,27 +139,13 @@ int main() {
 	}
 
 	return 0;
-
-	////////
-	/*
-	GeoPos point_a{ 59.934228f, 30.324594f };
-	GeoPos point_b{ 40.689167f, -74.044583f };
-
-	Vec3f point_a_vec = geo_to_vec(point_a);
-	Vec3f point_b_vec = geo_to_vec(point_b);
-
-	std::cout << "(" << point_a.lat_deg << ", " << point_a.lon_deg << ")\n";
-	std::cout << "(" << point_b.lat_deg << ", " << point_b.lon_deg << ")\n\n";
-	std::cout << "chord distance: " << calc_chord_distance_km(point_a_vec, point_b_vec) << " km\n";
-	std::cout << "arc distance: " << calc_arc_distance_km(point_a_vec, point_b_vec) << " km\n";
-	*/
 }
 
-void build_ui(tgui::Gui& gui, TransformMatrices& transforms) {
-	tgui::VerticalLayout::Ptr layout = tgui::VerticalLayout::create();
-	layout->setPosition(10.0f, 15.0f);
-	layout->setSize(150, 220);
-	layout->getRenderer()->setSpaceBetweenWidgets(5);
+void build_ui(tgui::Gui& gui, TransformMatrices& transforms, GeoPoints& geo_points) {
+	tgui::VerticalLayout::Ptr vert_layout = tgui::VerticalLayout::create();
+	vert_layout->setPosition(10.0f, 15.0f);
+	vert_layout->setSize(150, 250);
+	vert_layout->getRenderer()->setSpaceBetweenWidgets(5);
 
 	tgui::EditBoxSlider::Ptr horiz_rot_slider = tgui::EditBoxSlider::create();
 	horiz_rot_slider->setMinimum(0.0f);
@@ -161,6 +154,11 @@ void build_ui(tgui::Gui& gui, TransformMatrices& transforms) {
 	horiz_rot_slider->setValue(0.0f);
 	horiz_rot_slider->setDecimalPlaces(1);
 	horiz_rot_slider->setTextAlignment(tgui::HorizontalAlignment::Center);
+	horiz_rot_slider->onValueChange([&transforms](float horiz_angle_deg) {
+		transforms.horiz_rot = Mat4f::create_rotation_y(horiz_angle_deg * deg_to_rad);
+		transforms.changed = true;
+		});
+	vert_layout->add(horiz_rot_slider);
 
 	tgui::EditBoxSlider::Ptr vert_rot_slider = tgui::EditBoxSlider::create();
 	vert_rot_slider->setMinimum(-90.0f);
@@ -169,36 +167,85 @@ void build_ui(tgui::Gui& gui, TransformMatrices& transforms) {
 	vert_rot_slider->setValue(0.0f);
 	vert_rot_slider->setDecimalPlaces(1);
 	vert_rot_slider->setTextAlignment(tgui::HorizontalAlignment::Center);
-
-	horiz_rot_slider->onValueChange([&transforms](float horiz_angle_deg) {
-		transforms.horiz_rot = Mat4f::create_rotation_y(horiz_angle_deg * deg_to_rad);
-		transforms.changed = true;
-		});
 	vert_rot_slider->onValueChange([&transforms](float vert_angle_deg) {
 		transforms.vert_rot = Mat4f::create_rotation_x(vert_angle_deg * deg_to_rad);
 		transforms.changed = true;
 		});
+	vert_layout->add(vert_rot_slider);
 
-	layout->add(horiz_rot_slider);
-	layout->add(vert_rot_slider);
+	tgui::HorizontalLayout::Ptr point_a_horiz_layout = tgui::HorizontalLayout::create();
 
-	tgui::Label::Ptr azimuth_label = tgui::Label::create();
-	azimuth_label->setWidgetName("azimuth_label");
-	azimuth_label->setText(std::format("Azimuth:\n{}", 0.0f));
+	tgui::EditBoxSlider::Ptr point_a_lat_slider = tgui::EditBoxSlider::create();
+	point_a_lat_slider->setMinimum(-90.0f);
+	point_a_lat_slider->setMaximum(90.0f);
+	point_a_lat_slider->setStep(0.01f);
+	point_a_lat_slider->setValue(geo_points.a.lat_deg);
+	point_a_lat_slider->setDecimalPlaces(2);
+	point_a_lat_slider->setTextAlignment(tgui::HorizontalAlignment::Center);
+	point_a_lat_slider->onValueChange([&geo_points](float lat_deg) {
+		geo_points.a.lat_deg = lat_deg;
+		});
+	point_a_horiz_layout->add(point_a_lat_slider);
 
-	tgui::Label::Ptr elevation_label = tgui::Label::create();
-	elevation_label->setWidgetName("elevation_label");
-	elevation_label->setText(std::format("Elevation:\n{}", 0.0f));
+	tgui::EditBoxSlider::Ptr point_a_lon_slider = tgui::EditBoxSlider::create();
+	point_a_lon_slider->setMinimum(-180.0f);
+	point_a_lon_slider->setMaximum(180.0f);
+	point_a_lon_slider->setStep(0.01f);
+	point_a_lon_slider->setValue(geo_points.a.lon_deg);
+	point_a_lon_slider->setDecimalPlaces(2);
+	point_a_lon_slider->setTextAlignment(tgui::HorizontalAlignment::Center);
+	point_a_lon_slider->onValueChange([&geo_points](float lon_deg) {
+		geo_points.a.lon_deg = lon_deg;
+		});
+	point_a_horiz_layout->add(point_a_lon_slider);
 
-	layout->add(azimuth_label);
-	layout->add(elevation_label);
+	vert_layout->add(point_a_horiz_layout);
+
+	tgui::HorizontalLayout::Ptr point_b_horiz_layout = tgui::HorizontalLayout::create();
+
+	tgui::EditBoxSlider::Ptr point_b_lat_slider = tgui::EditBoxSlider::create();
+	point_b_lat_slider->setMinimum(-90.0f);
+	point_b_lat_slider->setMaximum(90.0f);
+	point_b_lat_slider->setStep(0.01f);
+	point_b_lat_slider->setValue(geo_points.b.lat_deg);
+	point_b_lat_slider->setDecimalPlaces(2);
+	point_b_lat_slider->setTextAlignment(tgui::HorizontalAlignment::Center);
+	point_b_lat_slider->onValueChange([&geo_points](float lat_deg) {
+		geo_points.b.lat_deg = lat_deg;
+		});
+	point_b_horiz_layout->add(point_b_lat_slider);
+
+	tgui::EditBoxSlider::Ptr point_b_lon_slider = tgui::EditBoxSlider::create();
+	point_b_lon_slider->setMinimum(-180.0f);
+	point_b_lon_slider->setMaximum(180.0f);
+	point_b_lon_slider->setStep(0.01f);
+	point_b_lon_slider->setValue(geo_points.b.lon_deg);
+	point_b_lon_slider->setDecimalPlaces(2);
+	point_b_lon_slider->setTextAlignment(tgui::HorizontalAlignment::Center);
+	point_b_lon_slider->onValueChange([&geo_points](float lon_deg) {
+		geo_points.b.lon_deg = lon_deg;
+		});
+	point_b_horiz_layout->add(point_b_lon_slider);
+
+	vert_layout->add(point_b_horiz_layout);
+
+	tgui::Label::Ptr arc_path_label = tgui::Label::create();
+	arc_path_label->setWidgetName("arc_path_label");
+	arc_path_label->setText(std::format("Arc path (km):\n{}", 0.0f));
+
+	tgui::Label::Ptr straight_path_label = tgui::Label::create();
+	straight_path_label->setWidgetName("straight_path_label");
+	straight_path_label->setText(std::format("Straight path (km):\n{}", 0.0f));
+
+	vert_layout->add(arc_path_label);
+	vert_layout->add(straight_path_label);
 
 	tgui::Panel::Ptr panel = tgui::Panel::create();
 	panel->getRenderer()->setBackgroundColor(tgui::Color(255, 255, 255));
 	panel->setPosition(10, 10);
-	panel->setSize(layout->getSize().x + 20, layout->getSize().y + 20);
+	panel->setSize(vert_layout->getSize().x + 20, vert_layout->getSize().y + 20);
 
-	panel->add(layout);
+	panel->add(vert_layout);
 	gui.add(panel);
 }
 
@@ -291,30 +338,39 @@ void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, 
 	}
 }
 
-void draw_path_stuff(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms) {
+void calc_and_draw_path(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms, const GeoPoints& geo_points, PathLen& path_len) {
+	bool point_a_zero = geo_points.a.lat_deg == 0.0f && geo_points.a.lon_deg == 0.0f;
+	bool point_b_zero = geo_points.b.lat_deg == 0.0f && geo_points.b.lon_deg == 0.0f;
+	if (point_a_zero && point_b_zero)
+		return;
+
+	// Calc.
+	Vec3f point_a_vec_earth = geo_to_vec_earth(geo_points.a);
+	Vec3f point_b_vec_earth = geo_to_vec_earth(geo_points.b);
+	path_len.straight_path_km = calc_chord_distance_km(point_a_vec_earth, point_b_vec_earth);
+	path_len.arc_path_km = calc_arc_distance_km(point_a_vec_earth, point_b_vec_earth);
+
+	// Draw.
 	// В нашем случае размеры окна никогда не меняются в рантайме.
 	static const float fov_vert_rad = static_cast<float>(45.0f * deg_to_rad);
 	static const float aspect_ratio = static_cast<float>(framebuffer.w) / framebuffer.h;
 	static const Mat4f proj = Mat4f::create_perspective(fov_vert_rad, aspect_ratio, 0.1f, 10.0f);
 	static const Mat4f viewport = Mat4f::create_viewport(framebuffer.w, framebuffer.h);
 
-	/*GeoPos point_a{ 23.60596207296f, -14.85970911760f };
-	GeoPos point_b{ -59.80998273442f, -90.0f };*/
+	//Vec3f point_a_vec_unit = geo_to_vec_unit(geo_points.a);
+	//Vec3f point_b_vec_unit = geo_to_vec_unit(geo_points.b);
 
-	GeoPos point_a{ -23.555771f, -46.639557f };
-	GeoPos point_b{ 28.613830f, 77.208491f };
+	Vec3f point_a_vec_unit = point_a_vec_earth.get_normalized();
+	Vec3f point_b_vec_unit = point_b_vec_earth.get_normalized();
 
-	Vec3f point_a_vec = geo_to_vec_unit(point_a);
-	Vec3f point_b_vec = geo_to_vec_unit(point_b);
-
-	float angle_cos = std::clamp(Vec3f::dot(point_a_vec, point_b_vec), -1.0f, 1.0f);
+	float angle_cos = std::clamp(Vec3f::dot(point_a_vec_unit, point_b_vec_unit), -1.0f, 1.0f);
 	float angle = std::acos(angle_cos);
 
 	// "Базис окружности".
-	float dot = Vec3f::dot(point_a_vec, point_b_vec);
-	Vec3f b_proj = (point_a_vec * dot);
-	Vec3f i{ point_a_vec.x, point_a_vec.y, point_a_vec.z };
-	Vec3f j = (point_b_vec - b_proj).get_normalized();
+	float dot = Vec3f::dot(point_a_vec_unit, point_b_vec_unit);
+	Vec3f b_proj = (point_a_vec_unit * dot);
+	Vec3f i{ point_a_vec_unit.x, point_a_vec_unit.y, point_a_vec_unit.z };
+	Vec3f j = (point_b_vec_unit - b_proj).get_normalized();
 	Vec3f k = Vec3f::zero;
 	Mat4f basis = Mat4f::create_basis(i, j, k);
 
