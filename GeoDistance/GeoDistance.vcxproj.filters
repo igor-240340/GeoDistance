@@ -24,10 +24,10 @@
     <ClCompile Include="Vec3f.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="graphics.cpp">
+    <ClCompile Include="Mat4f.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mat4f.cpp">
+    <ClCompile Include="graphics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

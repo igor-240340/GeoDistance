@@ -57,8 +57,8 @@ struct PathLen {
 void build_ui(tgui::Gui& gui, TransformMatrices& transforms, GeoPoints& geo_points);
 void init_transforms(TransformMatrices& transforms);
 void load_model(std::string model_path, std::vector<Polygon>& polygons);
-void draw_globe(std::vector<Polygon> globe_mesh, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
-void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform);
+void draw_earth(std::vector<Polygon> earth_mesh, const sf::Image& earth_texture_image, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms);
+void rasterize_polygons_flat_shaded_textured_affine_ortho(const std::vector<Polygon>& polygons, const sf::Image& texture_image, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform);
 void calc_and_draw_path(Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms, const GeoPoints& geo_points, PathLen& path_len);
 
 int main() {
@@ -95,8 +95,16 @@ int main() {
 	ZBuffer z_buffer{ w, h, std::vector<float>(w * h) };
 
 	// Читаем меш глобуса.
-	std::vector<Polygon> globe_mesh;
-	load_model(std::format("assets/globe/globe.obj"), globe_mesh);
+	std::vector<Polygon> earth_mesh;
+	load_model(std::format("assets/earth/earth.obj"), earth_mesh);
+
+	// Читаем текстуру Земли.
+	sf::Texture earth_texture;
+	if (!earth_texture.loadFromFile("assets/earth/earth.jpg")) {
+		std::cout << "sfml: earth_texture.loadFromFile() failed\n";
+		return 1;
+	}
+	sf::Image earth_texture_image = earth_texture.copyToImage();
 
 	PathLen path_len{};
 	while (window.isOpen()) {
@@ -111,7 +119,7 @@ int main() {
 		clear_framebuffer(sf::Color{ 0x3e92cc }, framebuffer);
 		clear_z_buffer(1.0f, z_buffer);
 
-		draw_globe(globe_mesh, light, framebuffer, z_buffer, transforms);
+		draw_earth(earth_mesh, earth_texture_image, light, framebuffer, z_buffer, transforms);
 		calc_and_draw_path(framebuffer, z_buffer, transforms, geo_points, path_len);
 
 		tgui::Label::Ptr arc_path_label = gui.get<tgui::Label>("arc_path_label");
@@ -273,18 +281,27 @@ void load_model(std::string model_path, std::vector<Polygon>& polygons) {
 				attrib.vertices[3 * index0.vertex_index + 0],
 				attrib.vertices[3 * index0.vertex_index + 1],
 				attrib.vertices[3 * index0.vertex_index + 2]
+			}, TexCoord{
+				attrib.texcoords[2 * index0.texcoord_index + 0],
+				attrib.texcoords[2 * index0.texcoord_index + 1]
 			} };
 
 			const Vertex v1{ Vec3f{
 				attrib.vertices[3 * index1.vertex_index + 0],
 				attrib.vertices[3 * index1.vertex_index + 1],
 				attrib.vertices[3 * index1.vertex_index + 2]
+			}, TexCoord{
+				attrib.texcoords[2 * index1.texcoord_index + 0],
+				attrib.texcoords[2 * index1.texcoord_index + 1]
 			} };
 
 			const Vertex v2{ Vec3f{
 				attrib.vertices[3 * index2.vertex_index + 0],
 				attrib.vertices[3 * index2.vertex_index + 1],
 				attrib.vertices[3 * index2.vertex_index + 2]
+			}, TexCoord{
+				attrib.texcoords[2 * index2.texcoord_index + 0],
+				attrib.texcoords[2 * index2.texcoord_index + 1]
 			} };
 
 			polygons.push_back(Polygon{ { v0, v1, v2 }, sf::Color::White });
@@ -292,11 +309,11 @@ void load_model(std::string model_path, std::vector<Polygon>& polygons) {
 	}
 }
 
-void draw_globe(std::vector<Polygon> globe_mesh, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms) {
-	rasterize_polygons_flat_shaded_ortho(globe_mesh, light, framebuffer, z_buffer, transforms.camera);
+void draw_earth(std::vector<Polygon> earth_mesh, const sf::Image& earth_texture_image, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const TransformMatrices& transforms) {
+	rasterize_polygons_flat_shaded_textured_affine_ortho(earth_mesh, earth_texture_image, light, framebuffer, z_buffer, transforms.camera);
 }
 
-void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform) {
+void rasterize_polygons_flat_shaded_textured_affine_ortho(const std::vector<Polygon>& polygons, const sf::Image& texture_image, const Light& light, Framebuffer& framebuffer, ZBuffer& z_buffer, const Mat4f& transform) {
 	// В нашем случае размеры окна никогда не меняются в рантайме.
 	static const float fov_vert_rad = static_cast<float>(45.0f * deg_to_rad);
 	static const float aspect_ratio = static_cast<float>(framebuffer.w) / framebuffer.h;
@@ -326,7 +343,7 @@ void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, 
 			Vec4f pos_ndc = pos_clip / pos_clip.w;
 			Vec4f pos_screen = viewport * pos_ndc;
 
-			vertices_screen.push_back(Vertex{ Vec3f{pos_screen} });
+			vertices_screen.push_back(Vertex{ Vec3f{pos_screen}, vertex.tex_coord });
 		}
 
 		Polygon polygon_screen{
@@ -334,7 +351,7 @@ void rasterize_polygons_flat_shaded_ortho(const std::vector<Polygon>& polygons, 
 			polygon.albedo_color,
 			polygon_normal
 		};
-		draw_polygon_flat_shaded(polygon_screen, light, framebuffer, z_buffer);
+		draw_polygon_flat_shaded_textured_affine(polygon_screen, texture_image, light, framebuffer, z_buffer);
 	}
 }
 

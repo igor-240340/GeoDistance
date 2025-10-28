@@ -1,7 +1,7 @@
 # GeoDistance
 
 ## About
-https://github.com/user-attachments/assets/fa9cc8b2-1a34-43bb-8124-7e2eaddbbec0
+![](docs/globe.png)
 
 It uses custom [software renderer](https://github.com/igor-240340/SoftwareRenderer).
 
