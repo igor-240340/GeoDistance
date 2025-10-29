@@ -100,7 +100,7 @@ int main() {
 
 	// Читаем текстуру Земли.
 	sf::Texture earth_texture;
-	if (!earth_texture.loadFromFile("assets/earth/earth.jpg")) {
+	if (!earth_texture.loadFromFile("assets/earth/earth.bmp")) {
 		std::cout << "sfml: earth_texture.loadFromFile() failed\n";
 		return 1;
 	}
