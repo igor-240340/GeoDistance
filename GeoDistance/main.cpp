@@ -116,7 +116,7 @@ int main() {
 				window.close();
 		}
 
-		clear_framebuffer(sf::Color{ 0x3e92cc }, framebuffer);
+		clear_framebuffer(sf::Color::Black, framebuffer);
 		clear_z_buffer(1.0f, z_buffer);
 
 		draw_earth(earth_mesh, earth_texture_image, light, framebuffer, z_buffer, transforms);
