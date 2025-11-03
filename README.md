@@ -2,7 +2,7 @@
 
 ## About
 
-https://github.com/user-attachments/assets/6a10f577-2ec2-4510-9ee5-50e5dd12cd08
+https://github.com/user-attachments/assets/6d3b7c60-ff86-471f-b915-1585667119bc
 
 It uses custom [software renderer](https://github.com/igor-240340/SoftwareRenderer).
 
