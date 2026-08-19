@@ -932,9 +932,6 @@ void draw_flat_bottom_polygon_flat_shaded_textured_affine(Polygon polygon_screen
 	float slope_left_inv = (v1.pos.x - v0.pos.x) / height;
 	float slope_right_inv = (v2.pos.x - v0.pos.x) / height;
 
-	//float scan_line_start_u = v0.tex_coord.u;
-	//float scan_line_start_v = v0.tex_coord.v;
-
 	// Slope'ы z-атрибутов при интерполяции по боковым рёбрам.
 	float z_slope_vert_left = (v1.pos.z - v0.pos.z) / height;
 	float z_slope_vert_right = (v2.pos.z - v0.pos.z) / height;
